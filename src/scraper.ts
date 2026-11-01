@@ -1,20 +1,3 @@
-/**
- * Dead by Daylight wiki scraper
- * Lists every Killer (with Power and unique Perks) and every Survivor (with unique Perks).
- *
- * The main page provides the roster; each character's detail page provides
- * the unique Perks (and, for Killers, the Power).
- *
- * Usage:
- *   npm install
- *   npm start                          # writes dbd-data.json and prints a summary
- *   npm start -- --out data.json       # custom output path
- *   npm start -- --only "Clown"        # only characters whose name contains the text (testing)
- *   npm run typecheck                  # type-check without running
- *
- * Requires Node 18+ (built-in fetch).
- */
-import { writeFile } from "node:fs/promises";
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
 import dotenv from "dotenv";
@@ -27,9 +10,7 @@ import type {
 
 dotenv.config();
 
-/*
- * TYPES
- */
+// TYPES
 
 type $ = cheerio.CheerioAPI;
 type Selection = cheerio.Cheerio<AnyNode>;
@@ -46,6 +27,12 @@ interface PowerInfo {
   powerIcon: string | null;
 }
 
+interface ScrapedEntry {
+  entry: RosterEntry;
+  perks: Perk[];
+  power: PowerInfo;
+}
+
 export interface ScraperOutput {
   source: string;
   generatedAt: string;
@@ -53,9 +40,7 @@ export interface ScraperOutput {
   survivors: Survivor[];
 }
 
-/*
- * CONFIG
- */
+// CONFIG
 
 const BASE = "https://deadbydaylight.wiki.gg";
 const MAIN_PAGE = `${BASE}/wiki/Dead_by_Daylight_Wiki`;
@@ -65,17 +50,7 @@ const CONCURRENCY = process.env.CONCURRENCY
   : 4;
 const REQUEST_DELAY_MS = 250;
 
-const args = process.argv.slice(2);
-const argValue = (flag: string): string | null => {
-  const i = args.indexOf(flag);
-  return i >= 0 ? (args[i + 1] ?? null) : null;
-};
-const outPath = argValue("--out") ?? "dbd-data.json";
-const onlyFilter = argValue("--only")?.toLowerCase() ?? null;
-
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 export const absolute = (href: string | undefined | null): string | null =>
   href ? new URL(href, BASE).href : null;
@@ -113,9 +88,7 @@ async function getHtml(url: string, retries = 3): Promise<string> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Parsers
-// ---------------------------------------------------------------------------
+// PARSERS
 
 /**
  * Searches the main page for character links and returns a roster of all characters.
@@ -280,27 +253,15 @@ function parsePower(html: string): PowerInfo {
   return { power, powerIcon };
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
-interface Scraped {
-  entry: RosterEntry;
-  perks: Perk[];
-  power: PowerInfo;
-}
-
-export async function scrapeWiki(outToFile?: boolean): Promise<ScraperOutput> {
+export async function scrapeWiki(): Promise<ScraperOutput> {
   console.log("Fetching roster...");
-  let roster = parseRoster(await getHtml(MAIN_PAGE));
+  const roster = parseRoster(await getHtml(MAIN_PAGE));
   if (!roster.length)
     throw new Error("No characters found; the wiki markup may have changed.");
-  if (onlyFilter)
-    roster = roster.filter((re) => re.name.toLowerCase().includes(onlyFilter));
 
   console.log(`Fetching ${roster.length} character pages...`);
   let done = 0;
-  const scraped = await runConcurrently<RosterEntry, Scraped>(
+  const scraped = await runConcurrently<RosterEntry, ScrapedEntry>(
     roster,
     async (entry) => {
       let perks: Perk[] = [];
@@ -349,8 +310,5 @@ export async function scrapeWiki(outToFile?: boolean): Promise<ScraperOutput> {
     killers,
     survivors,
   };
-  if (outToFile) {
-    await writeFile(outPath, JSON.stringify(data, null, 2), "utf8");
-  }
   return data;
 }
