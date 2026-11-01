@@ -28,7 +28,12 @@ After cloning the repository, you will need to install the dependencies using np
 Next, you will need a user, password and a database that the API will connect to.<br>
 
 I found it's easiest to use the Desktop version of MongoDB - **MongoDB Compass**.
-There you can simply create a new database with the click of a button. In shell mode you can create a new user with `db.createUser({ user: "username", pwd: "password" })`.
+There you can simply create a new database with the click of a button. In shell mode you can create a new user with 
+
+```js
+db.createUser({ user: "username", pwd: "password" })
+```
+
 Make sure your user has read-write permissions on the database. More info [here](https://www.mongodb.com/docs/manual/core/security-users/).
 
 ### Environment
