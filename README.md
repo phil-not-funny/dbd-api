@@ -5,7 +5,7 @@ This API is made by scraping the official [Dead by Daylight wiki](https://deadby
 
 ## Description
 
-Are you tired bad, outdated DBD APIs? Yeah, _me too_.<br>
+Are you tired of outdated DBD APIs? Yeah, _me too_.<br>
 So I decided to make my own but in a way that it will never get outdated.
 
 This API runs on your machine using MongoDB and expressTS.<br>
